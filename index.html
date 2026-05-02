@@ -1,10 +1,765 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 客服助手</title>
+    <style>
+        :root {
+            --bg: #f5f7fb;
+            --panel: rgba(255, 255, 255, 0.9);
+            --text: #162033;
+            --muted: #68758a;
+            --line: rgba(28, 45, 74, 0.12);
+            --primary: #246bfe;
+            --primary-dark: #174ed9;
+            --accent: #13a886;
+            --danger: #d94a4a;
+            --warning: #c97921;
+            --shadow: 0 24px 70px rgba(38, 56, 92, 0.16);
+            --radius: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            color: var(--text);
+            font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", Arial, sans-serif;
+            background:
+                radial-gradient(circle at 12% 10%, rgba(36, 107, 254, 0.16), transparent 30%),
+                radial-gradient(circle at 86% 4%, rgba(19, 168, 134, 0.14), transparent 28%),
+                linear-gradient(135deg, #fbfdff 0%, var(--bg) 58%, #edf2f8 100%);
+        }
+
+        .shell {
+            width: min(1160px, calc(100% - 40px));
+            min-height: 100vh;
+            display: grid;
+            grid-template-rows: auto 1fr;
+            gap: 24px;
+            margin: 0 auto;
+            padding: 34px 0;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 13px;
+            min-width: 0;
+        }
+
+        .logo {
+            width: 46px;
+            height: 46px;
+            display: grid;
+            place-items: center;
+            flex: 0 0 auto;
+            border-radius: var(--radius);
+            color: #ffffff;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            box-shadow: 0 14px 34px rgba(36, 107, 254, 0.26);
+        }
+
+        svg {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(24px, 3vw, 36px);
+            line-height: 1.12;
+            letter-spacing: 0;
+        }
+
+        .brand p {
+            margin: 7px 0 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 36px;
+            padding: 8px 12px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            color: var(--muted);
+            background: rgba(255, 255, 255, 0.74);
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 0 5px rgba(19, 168, 134, 0.12);
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 320px minmax(0, 1fr);
+            gap: 22px;
+            min-height: 0;
+        }
+
+        .panel {
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: var(--panel);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(18px);
+        }
+
+        .sidebar {
+            padding: 20px;
+        }
+
+        .sidebar h2 {
+            margin: 0 0 8px;
+            font-size: 18px;
+        }
+
+        .sidebar p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.75;
+        }
+
+        .metric-grid {
+            display: grid;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .metric {
+            display: flex;
+            gap: 10px;
+            padding: 12px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: rgba(255, 255, 255, 0.62);
+        }
+
+        .metric-icon {
+            width: 32px;
+            height: 32px;
+            display: grid;
+            place-items: center;
+            flex: 0 0 auto;
+            border-radius: var(--radius);
+            color: var(--primary);
+            background: rgba(36, 107, 254, 0.1);
+        }
+
+        .metric strong {
+            display: block;
+            margin-bottom: 3px;
+            font-size: 13px;
+        }
+
+        .metric span {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .quick-title {
+            margin: 22px 0 10px;
+            color: var(--text);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .quick-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .quick-btn,
+        .ghost-button {
+            min-height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.68);
+            font: inherit;
+            font-size: 13px;
+            cursor: pointer;
+            transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+        }
+
+        .quick-btn {
+            justify-content: flex-start;
+            padding: 9px 11px;
+            text-align: left;
+        }
+
+        .quick-btn:hover,
+        .ghost-button:hover {
+            border-color: rgba(36, 107, 254, 0.44);
+            background: #ffffff;
+            transform: translateY(-1px);
+        }
+
+        .chat-panel {
+            min-height: 650px;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 18px 20px;
+            border-bottom: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .chat-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .avatar {
+            width: 38px;
+            height: 38px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            color: #ffffff;
+            background: linear-gradient(135deg, var(--accent), var(--primary));
+            box-shadow: 0 10px 22px rgba(19, 168, 134, 0.2);
+        }
+
+        .chat-header h2 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .chat-header p {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .clear-button {
+            color: var(--danger);
+        }
+
+        .messages {
+            padding: 22px;
+            overflow-y: auto;
+            background:
+                linear-gradient(rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.62)),
+                linear-gradient(90deg, rgba(22, 32, 51, 0.045) 1px, transparent 1px),
+                linear-gradient(rgba(22, 32, 51, 0.045) 1px, transparent 1px);
+            background-size: auto, 28px 28px, 28px 28px;
+        }
+
+        .empty-state {
+            min-height: 360px;
+            display: grid;
+            place-items: center;
+            text-align: center;
+            color: var(--muted);
+        }
+
+        .empty-state-inner {
+            width: min(430px, 100%);
+        }
+
+        .empty-icon {
+            width: 54px;
+            height: 54px;
+            display: grid;
+            place-items: center;
+            margin: 0 auto 14px;
+            border-radius: var(--radius);
+            color: var(--primary);
+            background: rgba(36, 107, 254, 0.1);
+        }
+
+        .empty-state h3 {
+            margin: 0 0 8px;
+            color: var(--text);
+            font-size: 24px;
+        }
+
+        .empty-state p {
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .message-row {
+            display: flex;
+            margin-bottom: 14px;
+        }
+
+        .message-row.user {
+            justify-content: flex-end;
+        }
+
+        .bubble {
+            max-width: min(72%, 680px);
+            padding: 12px 14px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: #ffffff;
+            box-shadow: 0 12px 26px rgba(38, 56, 92, 0.1);
+            overflow-wrap: anywhere;
+        }
+
+        .message-row.user .bubble {
+            color: #ffffff;
+            border-color: transparent;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            box-shadow: 0 14px 30px rgba(36, 107, 254, 0.22);
+        }
+
+        .bubble-label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .message-row.user .bubble-label {
+            color: rgba(255, 255, 255, 0.74);
+        }
+
+        .bubble-text {
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.75;
+            white-space: pre-wrap;
+        }
+
+        .composer {
+            padding: 18px 20px 20px;
+            border-top: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 118px;
+            gap: 12px;
+        }
+
+        .input-wrap input {
+            width: 100%;
+            height: 48px;
+            padding: 0 15px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            outline: none;
+            color: var(--text);
+            background: #ffffff;
+            font: inherit;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .input-wrap input:focus {
+            border-color: rgba(36, 107, 254, 0.62);
+            box-shadow: 0 0 0 4px rgba(36, 107, 254, 0.1);
+        }
+
+        .primary-button {
+            min-height: 48px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border: 0;
+            border-radius: var(--radius);
+            color: #ffffff;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            box-shadow: 0 12px 28px rgba(36, 107, 254, 0.24);
+            font: inherit;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+        }
+
+        .primary-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 16px 34px rgba(36, 107, 254, 0.3);
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.62;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .notice {
+            min-height: 20px;
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .notice.success {
+            color: var(--accent);
+        }
+
+        .notice.warning {
+            color: var(--warning);
+        }
+
+        .notice.error {
+            color: var(--danger);
+        }
+
+        @media (max-width: 900px) {
+            .shell {
+                width: min(100% - 24px, 720px);
+                padding: 22px 0;
+            }
+
+            .topbar,
+            .chat-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .chat-panel {
+                min-height: 600px;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .brand {
+                align-items: flex-start;
+            }
+
+            .sidebar,
+            .chat-header,
+            .messages,
+            .composer {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+
+            .header-actions,
+            .ghost-button {
+                width: 100%;
+            }
+
+            .input-row {
+                grid-template-columns: 1fr;
+            }
+
+            .bubble {
+                max-width: 88%;
+            }
+        }
+    </style>
 </head>
 <body>
+    <main class="shell">
+        <header class="topbar">
+            <div class="brand">
+                <div class="logo" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path>
+                        <path d="M8 9h8"></path>
+                        <path d="M8 13h5"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1>AI 客服助手</h1>
+                    <p>面向多轮对话的智能客服工作台，支持连续追问和上下文理解。</p>
+                </div>
+            </div>
+            <div class="status">
+                <span class="status-dot"></span>
+                <span>本地服务在线</span>
+            </div>
+        </header>
 
+        <section class="layout" aria-label="AI 客服助手工作台">
+            <aside class="panel sidebar">
+                <h2>会话能力</h2>
+                <p>适合处理售前咨询、订单问题、政策解释和常见问题答复。清除会话会重置后端上下文。</p>
+
+                <div class="metric-grid">
+                    <div class="metric">
+                        <span class="metric-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M3 12h4l3 8 4-16 3 8h4"></path>
+                            </svg>
+                        </span>
+                        <span>
+                            <strong>多轮上下文</strong>
+                            <span>连续对话时保留前文语义，让追问更自然。</span>
+                        </span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M12 2l7 4v6c0 5-3 8-7 10-4-2-7-5-7-10V6z"></path>
+                                <path d="M9 12l2 2 4-5"></path>
+                            </svg>
+                        </span>
+                        <span>
+                            <strong>客服场景</strong>
+                            <span>可用于答疑、解释规则、引导用户提交信息。</span>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="quick-title">快捷提问</div>
+                <div class="quick-list">
+                    <button class="quick-btn" onclick="useQuickQuestion('我想查询订单状态，需要提供哪些信息？')">查询订单需要什么信息？</button>
+                    <button class="quick-btn" onclick="useQuickQuestion('如果我想申请退款，流程是什么？')">退款流程是什么？</button>
+                    <button class="quick-btn" onclick="useQuickQuestion('请用客服口吻帮我解释一下会员权益。')">解释会员权益</button>
+                </div>
+            </aside>
+
+            <section class="panel chat-panel">
+                <div class="chat-header">
+                    <div class="chat-title">
+                        <div class="avatar" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M12 8V4H8"></path>
+                                <rect x="4" y="8" width="16" height="12" rx="2"></rect>
+                                <path d="M9 14h.01"></path>
+                                <path d="M15 14h.01"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2>客服会话</h2>
+                            <p>Enter 发送消息，清除按钮会调用后端清空会话记忆。</p>
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <button class="ghost-button clear-button" id="clearButton" onclick="clearConversation()" title="清除会话">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M3 6h18"></path>
+                                <path d="M8 6V4h8v2"></path>
+                                <path d="M19 6l-1 14H6L5 6"></path>
+                                <path d="M10 11v5"></path>
+                                <path d="M14 11v5"></path>
+                            </svg>
+                            清除
+                        </button>
+                    </div>
+                </div>
+
+                <div class="messages" id="chatBox">
+                    <div class="empty-state" id="emptyState">
+                        <div class="empty-state-inner">
+                            <div class="empty-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path>
+                                    <path d="M8 10h8"></path>
+                                    <path d="M8 14h6"></path>
+                                </svg>
+                            </div>
+                            <h3>开始一轮客户咨询</h3>
+                            <p>可以询问售前问题、订单处理、退款规则或让助手继续追问用户缺失信息。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="composer">
+                    <div class="input-row">
+                        <div class="input-wrap">
+                            <input type="text" id="message" placeholder="请输入客户问题，例如：我想退货应该怎么操作？" onkeydown="handleMessageKeydown(event)">
+                        </div>
+                        <button class="primary-button" id="sendButton" onclick="sendMessage()">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M22 2L11 13"></path>
+                                <path d="M22 2l-7 20-4-9-9-4z"></path>
+                            </svg>
+                            发送
+                        </button>
+                    </div>
+                    <div class="notice" id="notice"></div>
+                </div>
+            </section>
+        </section>
+    </main>
+
+    <script>
+        const API_BASE = "http://127.0.0.1:8000";
+        const messageInput = document.getElementById("message");
+        const chatBox = document.getElementById("chatBox");
+        const emptyState = document.getElementById("emptyState");
+        const notice = document.getElementById("notice");
+        const sendButton = document.getElementById("sendButton");
+        const clearButton = document.getElementById("clearButton");
+
+        function setNotice(text, type) {
+            notice.textContent = text;
+            notice.className = `notice ${type || ""}`.trim();
+        }
+
+        function setButtonLoading(button, isLoading, text) {
+            button.disabled = isLoading;
+            if (!button.dataset.defaultText) {
+                button.dataset.defaultText = button.textContent.trim();
+            }
+            const label = isLoading ? text : button.dataset.defaultText;
+            button.lastChild.textContent = label;
+        }
+
+        function hideEmptyState() {
+            emptyState.style.display = "none";
+        }
+
+        function showEmptyState() {
+            emptyState.style.display = "grid";
+        }
+
+        function appendMessage(role, text) {
+            hideEmptyState();
+
+            const row = document.createElement("div");
+            row.className = `message-row ${role}`;
+
+            const bubble = document.createElement("div");
+            bubble.className = "bubble";
+
+            const label = document.createElement("strong");
+            label.className = "bubble-label";
+            label.textContent = role === "user" ? "我" : "AI 客服";
+
+            const content = document.createElement("p");
+            content.className = "bubble-text";
+            content.textContent = text;
+
+            bubble.appendChild(label);
+            bubble.appendChild(content);
+            row.appendChild(bubble);
+            chatBox.appendChild(row);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+
+            if (!message) {
+                setNotice("请输入问题后再发送。", "warning");
+                messageInput.focus();
+                return;
+            }
+
+            appendMessage("user", message);
+            messageInput.value = "";
+            setButtonLoading(sendButton, true, "发送中");
+            setNotice("正在生成客服回复...", "");
+
+            try {
+                const response = await fetch(`${API_BASE}/chat`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        message: message
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`请求失败：${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.error) {
+                    setNotice(data.error, "warning");
+                    return;
+                }
+
+                appendMessage("assistant", data.answer || "后端已返回结果，但没有 answer 字段。");
+                setNotice("回复已生成。", "success");
+            } catch (error) {
+                setNotice(error.message || "发送失败，请检查后端服务是否启动。", "error");
+            } finally {
+                setButtonLoading(sendButton, false, "发送中");
+                messageInput.focus();
+            }
+        }
+
+        async function clearConversation() {
+            setButtonLoading(clearButton, true, "清除中");
+            setNotice("正在清除会话上下文...", "");
+
+            try {
+                const response = await fetch(`${API_BASE}/clear`, {
+                    method: "POST"
+                });
+
+                if (!response.ok) {
+                    throw new Error(`清除失败：${response.status}`);
+                }
+
+                chatBox.querySelectorAll(".message-row").forEach((node) => node.remove());
+                showEmptyState();
+                setNotice("会话已清除。", "success");
+            } catch (error) {
+                setNotice(error.message || "清除失败，请检查后端服务是否启动。", "error");
+            } finally {
+                setButtonLoading(clearButton, false, "清除中");
+            }
+        }
+
+        function handleMessageKeydown(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        }
+
+        function useQuickQuestion(text) {
+            messageInput.value = text;
+            messageInput.focus();
+        }
+    </script>
 </body>
 </html>
